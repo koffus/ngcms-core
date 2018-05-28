@@ -139,9 +139,7 @@ function admConfigurationTestEMail($params) {
 		return array('status' => 0, 'errorCode' => 3, 'errorText' => $lang['wrong_security_code']);
 	}
 
-	// Init $mail client
-	@include_once root . 'includes/classes/phpmailer/PHPMailerAutoload.php';
-	$mail = new PHPMailer;
+	$mail = new PHPMailer();
 
 	$fromName = ($params['from']['name'] ? $params['from']['name'] : 'NGCMS Mail Agent');
 

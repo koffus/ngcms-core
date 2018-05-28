@@ -1,0 +1,9 @@
+{
+    "config": {
+        "vendor-dir": "vendor"
+    },
+    "require": {
+        "twig/twig": "2.*",
+        "phpmailer/phpmailer": "6.*"
+    }
+}

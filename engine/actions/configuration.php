@@ -40,9 +40,9 @@ function twigmkSelectNY($params) {
 	return twigmkSelect($params);
 }
 
-$twig->addFunction('mkSelect', new Twig_Function_Function('twigmkSelect'));
-$twig->addFunction('mkSelectYN', new Twig_Function_Function('twigmkSelectYN'));
-$twig->addFunction('mkSelectNY', new Twig_Function_Function('twigmkSelectNY'));
+$twig->addFunction('mkSelect', new Twig_Function('twigmkSelect'));
+$twig->addFunction('mkSelectYN', new Twig_Function('twigmkSelectYN'));
+$twig->addFunction('mkSelectNY', new Twig_Function('twigmkSelectNY'));
 
 //
 // Save system config
@@ -203,7 +203,7 @@ function systemConfigEditForm() {
 	if (is_array($multiconfig)) {
 		foreach ($multiconfig as $mid => $mline) {
 			$tmpdom = implode("\n", $mline['domains']);
-			$tmpline .= "<tr class='contentEntry1'><td>" . ($mline['active'] ? 'On' : 'Off') . "</td><td>$mid</td><td>" . ($tmpdom ? $tmpdom : '-не указано-') . "</td><td>&nbsp;</td></tr>\n";
+			$tmpline .= "<tr class='contentEntry1'><td>" . ($mline['active'] ? 'On' : 'Off') . "</td><td>$mid</td><td>" . ($tmpdom ? $tmpdom : '-пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ-') . "</td><td>&nbsp;</td></tr>\n";
 		}
 	}
 	$tvars['vars']['multilist'] = $tmpline;

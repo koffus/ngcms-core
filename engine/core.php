@@ -13,9 +13,16 @@
 // ============================================================================
 // Define global directory constants
 // ============================================================================
-define('NGCoreDir', dirname(__FILE__) . '/');				// Location of Core directory
-define('NGRootDir', dirname(dirname(__FILE__)) . '/');		// Location of SiteRoot
+define('NGCoreDir', __DIR__ . '/');				// Location of Core directory
+define('NGRootDir', dirname(__DIR__) . '/');		// Location of SiteRoot
 define('NGClassDir', NGCoreDir.'classes/');					// Location of AutoLoaded classes
+define('NGVendorDir', NGRootDir.'vendor/');					// Location of Vendor classes
+
+$loader = require NGVendorDir.'autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
 
 // Autoloader for NEW STYLE Classes
 spl_autoload_register(function($className) {
@@ -239,8 +246,8 @@ if ((!file_exists(confroot . 'config.php')) || (filesize(confroot . 'config.php'
 loadGroups();
 
 // ** Preload TWIG engine
-require_once root . 'includes/classes/Twig/Autoloader.php';
-Twig_Autoloader::register();
+//require_once root . 'includes/classes/Twig/Autoloader.php';
+//Twig_Autoloader::register();
 
 // ** Init our own exception handler
 set_exception_handler('ngExceptionHandler');
@@ -249,8 +256,23 @@ register_shutdown_function('ngShutdownHandler');
 
 //
 // *** Initialize TWIG engine
-$twigLoader = new Twig_Loader_NGCMS(root);
-$twigStringLoader = new Twig_Loader_String();
+$twigLoader = new NGTwigLoader(root);
+// replace https://stackoverflow.com/questions/31081910/what-to-use-instead-of-twig-loader-string
+// $twigStringLoader = new Twig_Loader_String();
+
+
+/**
+ * Wrapper for template processing. Adds to each template variables:
+ * _templateName
+ * _templatePath
+ */
+abstract class Twig_Template_NGCMS extends Twig_Template {
+    public function render(Twig_Environment $env) {
+        $context['_templateName'] = $this->getTemplateName();
+        $context['_templatePath'] = dirname($this->getTemplateName()).DIRECTORY_SEPARATOR;
+        return parent::render($context);
+    }
+}
 
 // - Configure environment and general parameters
 $twig = new Twig_Environment($twigLoader, array(
@@ -258,16 +280,16 @@ $twig = new Twig_Environment($twigLoader, array(
 	'auto_reload'         => true,
 	'autoescape'          => false,
 	'charset'             => 'UTF-8',
-	'base_template_class' => 'Twig_Template_NGCMS',
+	'base_template_class' => 'Twig_Template',
 ));
 
 $twig->addExtension(new Twig_Extension_StringLoader());
 
 // - Global variables [by REFERENCE]
-$twig->addGlobalRef('lang', $lang);
-$twig->addGlobalRef('handler', $CurrentHandler);
-$twig->addGlobalRef('global', $twigGlobal);
-$twig->addGlobalRef('system_flags', $SYSTEM_FLAGS);
+$twig->addGlobal('lang', $lang);
+$twig->addGlobal('handler', $CurrentHandler);
+$twig->addGlobal('global', $twigGlobal);
+$twig->addGlobal('system_flags', $SYSTEM_FLAGS);
 
 // - Global variables [by VALUE]
 $twig->addGlobal('skins_url', skins_url);
@@ -276,23 +298,23 @@ $twig->addGlobal('home', home);
 $twig->addGlobal('currentURL', $systemAccessURL);
 
 // - Define functions
-$twig->addFunction('pluginIsActive', new Twig_Function_Function('getPluginStatusActive'));
-$twig->addFunction('localPath', new Twig_Function_Function('twigLocalPath', array('needs_context' => true)));
-$twig->addFunction('getLang', new Twig_Function_Function('twigGetLang'));
-$twig->addFunction('isLang', new Twig_Function_Function('twigIsLang'));
-$twig->addFunction('isHandler', new Twig_Function_Function('twigIsHandler'));
-$twig->addFunction('isCategory', new Twig_Function_Function('twigIsCategory'));
-$twig->addFunction('isNews', new Twig_Function_Function('twigIsNews'));
-$twig->addFunction('isPerm', new Twig_Function_Function('twigIsPerm'));
-$twig->addFunction('callPlugin', new Twig_Function_Function('twigCallPlugin'));
-$twig->addFunction('isSet', new Twig_Function_Function('twigIsSet', array('needs_context' => true)));
-$twig->addFunction('debugContext', new Twig_Function_Function('twigDebugContext', array('needs_context' => true)));
-$twig->addFunction('debugValue', new Twig_Function_Function('twigDebugValue'));
-$twig->addFunction('getCategoryTree', new Twig_Function_Function('twigGetCategoryTree'));
-$twig->addFunction('engineMSG', new Twig_Function_Function('twigEngineMSG'));
+$twig->addFunction(new Twig_Function('pluginIsActive', 'getPluginStatusActive'));
+$twig->addFunction(new Twig_Function('localPath', 'twigLocalPath', array('needs_context' => true)));
+$twig->addFunction(new Twig_Function('getLang', 'twigGetLang'));
+$twig->addFunction(new Twig_Function('isLang', 'twigIsLang'));
+$twig->addFunction(new Twig_Function('isHandler', 'twigIsHandler'));
+$twig->addFunction(new Twig_Function('isCategory', 'twigIsCategory'));
+$twig->addFunction(new Twig_Function('isNews', 'twigIsNews'));
+$twig->addFunction(new Twig_Function('isPerm', 'twigIsPerm'));
+$twig->addFunction(new Twig_Function('callPlugin', 'twigCallPlugin'));
+$twig->addFunction(new Twig_Function('isSet', 'twigIsSet', array('needs_context' => true)));
+$twig->addFunction(new Twig_Function('debugContext', 'twigDebugContext', array('needs_context' => true)));
+$twig->addFunction(new Twig_Function('debugValue', 'twigDebugValue'));
+$twig->addFunction(new Twig_Function('getCategoryTree', 'twigGetCategoryTree'));
+$twig->addFunction(new Twig_Function('engineMSG', 'twigEngineMSG'));
 
 // - Define filters
-$twig->addFilter('truncateHTML', new Twig_Filter_Function('twigTruncateHTML'));
+$twig->addFilter(new Twig_SimpleFilter('truncateHTML', 'twigTruncateHTML'));
 
 // [[MARKER]] TWIG template engine is loaded
 $timer->registerEvent('Template engine is activated');
